@@ -2,11 +2,15 @@ const app = require('express')()
 const jwt = require('jsonwebtoken')
 const http = require('http').createServer(app)
 const bodyParser = require('body-parser')
+const mongoose = require('mongoose')
+const { createUser } = require('./services/UserService')
 const io = require('socket.io')(http, {
   cors: {
     origin: '*'
   }
 })
+
+let users = []
 
 const PORT = 8000
 const NEW_MESSAGE_EVENT = 'clientErrorNotification' //puede cambiar o agregar mas
@@ -35,13 +39,21 @@ app.post('/', (req, res) => {
 io.on('connection', (socket) => {
   console.log('connected')
 
-  socket.on(NEW_MESSAGE_EVENT, (data) => {
-    console.log(data)
+  socket.on(NEW_MESSAGE_EVENT, async (data) => {
+    const response = await createUser(data)
+    users.push(data)
+    console.log(response)
   })
 
   socket.on('disconnect', () => {
+    users.pop()
     console.log('disconnected')
   })
+})
+
+mongoose.connect('mongodb+srv://firepho:Auza940220.@cluster0.qlamj.mongodb.net/Kolegia?retryWrites=true&w=majority', { useNewUrlParser: true, useUnifiedTopology: true }, (err, res) => {
+  if(err) console.log('Error conecting to database: ' + err)
+  return true
 })
 
 http.listen(PORT, () => {
